@@ -1,28 +1,31 @@
-name: CI Build Check
+name: CI Build and Push
 
-# When should the robot wake up?
 on:
   push:
     branches: [ "main" ]
 
-# What should the robot do?
 jobs:
-  build-test:
-    runs-on: ubuntu-latest  # The robot's computer is Linux
+  build-and-push:
+    runs-on: ubuntu-latest
 
     steps:
-    # 1. Download the code
+    # 1. Check out the code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    # 2. Try to build the Docker image
-    - name: Build Docker Image
-      run: docker build -t house-price-app .
-      
-    # 3. (Optional) Run a quick test
-    # We run the container for 5 seconds to see if it crashes immediately
-    - name: Dry Run Container
-      run: |
-        docker run -d --name test-container -p 8000:80 house-price-app
-        sleep 5
-        docker ps | grep test-container
+    # 2. Log in to Docker Hub (Using the secrets!)
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # 3. Build the image AND Push it
+    # We use a special action that makes this easier
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        # Replace 'YOUR_USERNAME' with your actual Docker Hub username in the line below!
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/house-price-app:latest
