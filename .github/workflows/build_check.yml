@@ -1,0 +1,28 @@
+name: CI Build Check
+
+# When should the robot wake up?
+on:
+  push:
+    branches: [ "main" ]
+
+# What should the robot do?
+jobs:
+  build-test:
+    runs-on: ubuntu-latest  # The robot's computer is Linux
+
+    steps:
+    # 1. Download the code
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Try to build the Docker image
+    - name: Build Docker Image
+      run: docker build -t house-price-app .
+      
+    # 3. (Optional) Run a quick test
+    # We run the container for 5 seconds to see if it crashes immediately
+    - name: Dry Run Container
+      run: |
+        docker run -d --name test-container -p 8000:80 house-price-app
+        sleep 5
+        docker ps | grep test-container
