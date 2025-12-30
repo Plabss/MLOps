@@ -1,13 +1,20 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-import joblib  # Import this!
+import joblib
 import numpy as np
+from huggingface_hub import hf_hub_download # New Import!
 
 app = FastAPI()
 
-# 1. Load the Model at Startup
-# This happens once when the server turns on.
-model = joblib.load('model_v1.pkl')
+# 1. Download and Load the Model at Startup
+# Replace 'YOUR_HF_USERNAME' with your actual username!
+MODEL_REPO = "plabs99/house-price-model"
+MODEL_FILENAME = "model_v1.pkl"
+
+print("Downloading model from Hugging Face...")
+model_path = hf_hub_download(repo_id=MODEL_REPO, filename=MODEL_FILENAME)
+model = joblib.load(model_path)
+print("Model loaded successfully!")
 
 class HouseFeatures(BaseModel):
     rooms: int
@@ -15,11 +22,6 @@ class HouseFeatures(BaseModel):
 
 @app.post("/predict")
 def predict_price(features: HouseFeatures):
-    
-    # Prepare data for the model (needs to be a 2D array)
     features_array = np.array([[features.rooms, features.area_sqft]])
-    
-    # 2. Ask the Real Model
     prediction = model.predict(features_array)
-    
     return {"predicted_price": float(prediction[0])}
