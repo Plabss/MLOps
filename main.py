@@ -1,33 +1,39 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
+import logging
+import json
+from datetime import datetime
 
-# 1. Initialize the App (The Restaurant)
+# 1. Setup the Logger
+# We tell it to print information (INFO) to the console
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("mlops-logger")
+
 app = FastAPI()
 
-# 2. Define the Data Format ( The Menu)
-# This tells the user: "I need exactly these two numbers."
 class HouseFeatures(BaseModel):
     rooms: int
     area_sqft: float
 
-# 3. Load the Model (The Chef)
-# (In real life, you would use: model = joblib.load("model.pkl"))
-# Here we just use a simple function to simulate a model.
 def fake_model_predict(rooms, area):
     price = (rooms * 10000) + (area * 150)
     return price
 
-# 4. Create the Endpoint (The Waiter)
-# 'POST' means the user is sending us data.
 @app.post("/predict")
 def predict_price(features: HouseFeatures):
     
-    # Extract data from the request
-    rooms = features.rooms
-    area = features.area_sqft
-    
     # Run the model
-    prediction = fake_model_predict(rooms, area)
+    prediction = fake_model_predict(features.rooms, features.area_sqft)
     
-    # Return the result (JSON)
+    # 2. Create the Log Record (The Black Box Data)
+    log_data = {
+        "timestamp": datetime.now().isoformat(),
+        "inputs": features.dict(),
+        "prediction": prediction
+    }
+    
+    # 3. Print the log as a JSON string
+    # This will show up in your Render dashboard
+    logger.info(json.dumps(log_data))
+    
     return {"predicted_price": prediction}
